@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamDock Minimal</title>
+
+<style>
+
+:root{
+--bg:#000;
+--card:#111;
+--border:#1f1f1f;
+--accent:#e50914;
+--text:#fff;
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+-webkit-tap-highlight-color:transparent;
+}
+
+body{
+background:var(--bg);
+color:var(--text);
+padding:18px;
+padding-bottom:100px;
+}
+
+header{
+position:sticky;
+top:0;
+background:#000;
+padding-bottom:14px;
+z-index:100;
+}
+
+.logo{
+font-size:30px;
+font-weight:bold;
+margin-bottom:14px;
+}
+
+.logo span{
+color:var(--accent);
+}
+
+.search{
+width:100%;
+padding:15px;
+border:none;
+outline:none;
+border-radius:18px;
+background:#111;
+color:white;
+font-size:16px;
+}
+
+.section{
+margin-top:26px;
+}
+
+.section h2{
+font-size:20px;
+margin-bottom:14px;
+color:#d1d5db;
+}
+
+.grid{
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+
+.card{
+background:var(--card);
+border:1px solid var(--border);
+border-radius:24px;
+padding:16px;
+display:flex;
+align-items:center;
+gap:16px;
+transition:0.15s;
+position:relative;
+overflow:hidden;
+}
+
+.card:active{
+transform:scale(0.98);
+}
+
+.card img{
+width:52px;
+height:52px;
+object-fit:contain;
+flex-shrink:0;
+}
+
+.emoji{
+font-size:42px;
+width:52px;
+text-align:center;
+flex-shrink:0;
+}
+
+.title{
+font-size:18px;
+font-weight:600;
+}
+
+.recent{
+position:absolute;
+right:16px;
+font-size:11px;
+background:#1f1f1f;
+padding:5px 10px;
+border-radius:50px;
+color:#9ca3af;
+}
+
+.addBtn{
+position:fixed;
+right:20px;
+bottom:20px;
+width:65px;
+height:65px;
+border:none;
+border-radius:50%;
+background:var(--accent);
+color:white;
+font-size:36px;
+}
+
+.modal{
+position:fixed;
+inset:0;
+background:#000000cc;
+display:none;
+align-items:center;
+justify-content:center;
+padding:20px;
+z-index:999;
+}
+
+.modalBox{
+width:100%;
+max-width:400px;
+background:#111;
+padding:22px;
+border-radius:24px;
+}
+
+.modalBox h2{
+margin-bottom:18px;
+}
+
+.modalBox input{
+width:100%;
+padding:15px;
+margin-bottom:14px;
+border:none;
+outline:none;
+border-radius:15px;
+background:#1a1a1a;
+color:white;
+font-size:15px;
+}
+
+.modalBox button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:15px;
+background:var(--accent);
+color:white;
+font-size:16px;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+
+<div class="logo">
+Stream<span>Dock</span>
+</div>
+
+<input 
+type="search" 
+class="search" 
+id="searchInput"
+placeholder="Search or Google anything">
+
+</header>
+
+<div class="section" id="recentSection" style="display:none;">
+
+<h2>Recent</h2>
+
+<div class="grid" id="recentGrid"></div>
+
+</div>
+
+<div class="section">
+
+<h2>Platforms</h2>
+
+<div class="grid" id="platformGrid"></div>
+
+</div>
+
+<button class="addBtn" onclick="openModal()">+</button>
+
+<div class="modal" id="modal">
+
+<div class="modalBox">
+
+<h2>Add Platform</h2>
+
+<input type="text" id="name" placeholder="Platform Name">
+
+<input type="url" id="url" placeholder="Website URL">
+
+<input type="text" id="icon" placeholder="Emoji or Logo URL">
+
+<button onclick="savePlatform()">Save Platform</button>
+
+</div>
+
+</div>
+
+<script>
+
+const defaultApps = [
+
+{
+name:"Netflix",
+url:"https://www.netflix.com",
+icon:"https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+type:"img"
+},
+
+{
+name:"Prime Video",
+url:"https://www.primevideo.com",
+icon:"https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
+type:"img"
+},
+
+{
+name:"Disney+",
+url:"https://www.disneyplus.com",
+icon:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",
+type:"img"
+},
+
+{
+name:"Football",
+url:"https://www.fifa.com",
+icon:"⚽",
+type:"emoji"
+},
+
+{
+name:"Cricket",
+url:"https://www.icc-cricket.com",
+icon:"🏏",
+type:"emoji"
+}
+
+];
+
+if(!localStorage.getItem("apps")){
+localStorage.setItem("apps",JSON.stringify(defaultApps));
+}
+
+const modal = document.getElementById("modal");
+
+function openModal(index=null){
+
+modal.style.display="flex";
+
+window.editIndex=index;
+
+if(index!==null){
+
+const apps=JSON.parse(localStorage.getItem("apps"));
+
+document.getElementById("name").value=apps[index].name;
+document.getElementById("url").value=apps[index].url;
+document.getElementById("icon").value=apps[index].icon;
+
+}else{
+
+document.getElementById("name").value="";
+document.getElementById("url").value="";
+document.getElementById("icon").value="";
+
+}
+
+}
+
+window.onclick=function(e){
+
+if(e.target===modal){
+modal.style.display="none";
+}
+
+}
+
+function savePlatform(){
+
+const name=document.getElementById("name").value.trim();
+const url=document.getElementById("url").value.trim();
+const icon=document.getElementById("icon").value.trim();
+
+if(!name || !url || !icon){
+return;
+}
+
+const apps=JSON.parse(localStorage.getItem("apps"));
+
+const app={
+name,
+url,
+icon,
+type:icon.startsWith("http") ? "img" : "emoji"
+};
+
+if(window.editIndex!==null){
+
+apps[window.editIndex]=app;
+
+}else{
+
+apps.push(app);
+
+}
+
+localStorage.setItem("apps",JSON.stringify(apps));
+
+modal.style.display="none";
+
+renderApps();
+
+}
+
+function createCard(app,index,isRecent=false){
+
+const card=document.createElement("div");
+
+card.className="card";
+
+card.innerHTML=`
+
+${app.type==="img"
+? `<img src="${app.icon}">`
+: `<div class="emoji">${app.icon}</div>`}
+
+<div class="title">${app.name}</div>
+
+${isRecent ? `<div class="recent">Recent</div>` : ""}
+
+`;
+
+card.onclick=()=>openApp(app);
+
+setupHold(card,index);
+
+return card;
+
+}
+
+function renderApps(){
+
+const grid=document.getElementById("platformGrid");
+
+grid.innerHTML="";
+
+const apps=JSON.parse(localStorage.getItem("apps"));
+
+apps.forEach((app,index)=>{
+
+grid.appendChild(createCard(app,index,false));
+
+});
+
+}
+
+function openApp(app){
+
+let recent=JSON.parse(localStorage.getItem("recent")) || [];
+
+recent=recent.filter(x=>x.name!==app.name);
+
+recent.unshift(app);
+
+recent=recent.slice(0,5);
+
+localStorage.setItem("recent",JSON.stringify(recent));
+
+renderRecent();
+
+window.open(app.url,"_blank");
+
+}
+
+function renderRecent(){
+
+const recent=JSON.parse(localStorage.getItem("recent")) || [];
+
+const grid=document.getElementById("recentGrid");
+
+grid.innerHTML="";
+
+document.getElementById("recentSection").style.display=
+recent.length ? "block" : "none";
+
+recent.forEach((app,index)=>{
+
+grid.appendChild(createCard(app,index,true));
+
+});
+
+}
+
+function setupHold(element,index){
+
+let timer;
+
+element.addEventListener("touchstart",()=>{
+
+timer=setTimeout(()=>{
+
+deleteApp(index);
+
+},5000);
+
+});
+
+element.addEventListener("touchend",()=>{
+clearTimeout(timer);
+});
+
+element.addEventListener("touchmove",()=>{
+clearTimeout(timer);
+});
+
+}
+
+function deleteApp(index){
+
+const apps=JSON.parse(localStorage.getItem("apps"));
+
+apps.splice(index,1);
+
+localStorage.setItem("apps",JSON.stringify(apps));
+
+renderApps();
+
+}
+
+document.getElementById("searchInput")
+.addEventListener("keydown",function(e){
+
+if(e.key==="Enter"){
+
+const value=this.value.toLowerCase().trim();
+
+const apps=JSON.parse(localStorage.getItem("apps"));
+
+const found=apps.find(app=>
+app.name.toLowerCase().includes(value)
+);
+
+if(found){
+
+openApp(found);
+
+}else if(value){
+
+window.open(
+"https://www.google.com/search?q="+encodeURIComponent(value),
+"_blank"
+);
+
+}
+
+}
+
+});
+
+document.getElementById("searchInput")
+.addEventListener("input",function(){
+
+const value=this.value.toLowerCase();
+
+document.querySelectorAll("#platformGrid .card").forEach(card=>{
+
+card.style.display=
+card.innerText.toLowerCase().includes(value)
+? "flex"
+: "none";
+
+});
+
+});
+
+renderApps();
+renderRecent();
+
+</script>
+
+</body>
+</html>
